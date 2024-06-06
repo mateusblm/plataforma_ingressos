@@ -1,28 +1,116 @@
+import sys
 from customtkinter import *
+class Login_Register:
+    def __init__(self):
+        self.top = CTk()
+        self.top.geometry("600x450+966+256")
+        self.top.minsize(1, 1)
+        self.top.maxsize(1905, 1050)
+        self.top.resizable(1, 1)
+        self.top.title("1.0")
 
+        self.Frame1 = CTkEntry(master=self.top)
+        self.Frame1.place(relx=0.25, rely=0.156, relheight=0.722, relwidth=0.575)
 
-if __name__ == '__main__':
-    root = CTk()
-    root.geometry("350x400")
-    root.title("Login Cliente")
-    root._set_appearance_mode("light")
-    font1 = CTkFont(family="bold", size=15)
-    btn1 = CTkButton(master=root, text="Login", corner_radius=32, font=font1, width=100)
-    btn2 = CTkButton(master=root, text="Sign up", corner_radius=32, font=font1, width=100)
-    label1 = CTkLabel(master=root, font=font1, text="Usuario")
-    label2 = CTkLabel(master=root, font=font1, text="Senha")
+        self.Entry1 = CTkEntry(master=self.Frame1)
+        self.Entry1.place(relx=0.261, rely=0.4, relwidth=0.51)
 
-    entry_user = CTkEntry(root, placeholder_text="Digite o usuario")
-    entry_user.place(relx=0.50, rely=0.35, anchor="center")
-    entry_pass = CTkEntry(root, placeholder_text="Digite a senha", show="*")
-    entry_pass.place(relx=0.50, rely=0.55, anchor="center")
+        self.Entry1_2 = CTkEntry(master=self.Frame1, show="*")
+        self.Entry1_2.place(relx=0.261, rely=0.585, relwidth=0.51)
 
+        self.Button1 = CTkButton(master=self.Frame1, command=self.LoginBackEnd, text='''Sign In''')
+        self.Button1.place(relx=0.406, rely=0.708)
 
-    label1.place(relx=0.50, rely=0.25, anchor="center")
-    label2.place(relx=0.50, rely=0.45, anchor="center")
+        self.Label1 = CTkLabel(master=self.Frame1, text='''Login''')
+        self.Label1.place(relx=0.299, rely=0.034)
 
-    btn1.place(relx=0.65, rely=0.7, anchor="center")
-    btn2.place(relx=0.3, rely=0.7, anchor="center")
+        self.Button1_3 = CTkButton(master=self.Frame1, command=self.register, text='''Sign Up''')
+        self.Button1_3.place(relx=0.716, rely=0.852)
 
-    root.mainloop()
+        self.Label2 = CTkLabel(master=self.Frame1, text='''Username''')
+        self.Label2.place(relx=0.261, rely=0.338)
 
+        self.Label2_4 = CTkLabel(master=self.Frame1, text='''Password''')
+        self.Label2_4.place(relx=0.261, rely=0.523)
+
+        self.top.mainloop()
+
+    def register(self):
+
+        self.root = CTk()
+        self.root.geometry("467x364+679+202")
+        self.root.minsize(1, 1)
+        self.root.maxsize(1905, 1050)
+        self.root.resizable(1, 1)
+        self.root.title("1.0")
+        
+        self.FrameRegister = CTkEntry(master=self.root)
+        self.FrameRegister.place(relx=0.236, rely=0.192, relheight=0.626
+                                 , relwidth=0.525)
+
+        self.LabelRegister = CTkLabel(master=self.FrameRegister, text='''Create Your Account''')
+        self.LabelRegister.place(relx=0.122, rely=0.088)
+
+        self.EntryRegister = CTkEntry(master=self.FrameRegister)
+        self.EntryRegister.place(relx=0.265, rely=0.307, relwidth=0.473)
+
+        self.EntryRegister_1 = CTkEntry(master=self.FrameRegister)
+        self.EntryRegister_1.place(relx=1.592, rely=0.772, relwidth=0.473)
+
+        self.EntryRegister_2 = CTkEntry(master=self.FrameRegister)
+        self.EntryRegister_2.place(relx=0.241, rely=1.167, relwidth=0.473)
+
+        self.LabelRegister2 = CTkLabel(master=self.FrameRegister, text='''Username:''')
+        self.LabelRegister2.place(relx=0.265, rely=0.219)
+
+        self.EntryRegister_3 = CTkEntry(master=self.FrameRegister, show="*")
+        self.EntryRegister_3.place(relx=0.265, rely=0.491,relwidth=0.473)
+
+        self.LabelRegister2_4 = CTkLabel(master=self.FrameRegister, text='''Password:''')
+        self.LabelRegister2_4.place(relx=0.265, rely=0.395)
+
+        self.ButtonRegister = CTkButton(master=self.FrameRegister, command=self.RegisterBackEnd, text='''Sign Up''')
+        self.ButtonRegister.place(relx=0.327, rely=0.658)
+        self.root.mainloop()
+
+    def systempanel(self):
+        panel = CTk()
+        panel.title("System Panel")
+        panel.geometry("600x450+966+256")
+        panel.mainloop()
+
+    def RegisterBackEnd(self):
+        try:
+            with open("users.txt", "a") as archiveUser:
+                archiveUser.write(self.EntryRegister.get() + '\n')
+
+            with open("passwords.txt", "a") as archivePass:
+                archivePass.write(self.EntryRegister_3.get() + '\n')
+            self.root.destroy()
+        except:
+            pass
+
+    def LoginBackEnd(self):
+        with open("users.txt", "r") as archiveUser:
+            users = archiveUser.readlines()
+        with open("passwords.txt", "r") as archivePass:
+            passws = archivePass.readlines()
+
+        users = list(map(lambda x: x.replace('\n', ''), users))
+        passws = list(map(lambda x: x.replace('\n', ''), passws))
+
+        user = self.Entry1.get()
+        passw = self.Entry1_2.get()
+
+        sucesslogin = False
+
+        for i in range(len(users)):
+            if user == users[i] and passw == passws[i]:
+                self.top.destroy()
+                self.systempanel()
+                sucesslogin = True
+
+        if not sucesslogin:
+            self.top.destroy()
+
+Login_Register()
