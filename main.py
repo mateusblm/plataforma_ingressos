@@ -3,11 +3,11 @@ from customtkinter import *
 class Login_Register:
     def __init__(self):
         self.top = CTk()
-        self.top.geometry("600x450+966+256")
+        self.top.geometry("600x450")
         self.top.minsize(1, 1)
         self.top.maxsize(1905, 1050)
         self.top.resizable(1, 1)
-        self.top.title("1.0")
+        self.top.title("Plataforma Ingresso")
 
         self.Frame1 = CTkEntry(master=self.top)
         self.Frame1.place(relx=0.25, rely=0.156, relheight=0.722, relwidth=0.575)
@@ -19,30 +19,30 @@ class Login_Register:
         self.Entry1_2.place(relx=0.261, rely=0.585, relwidth=0.51)
 
         self.Button1 = CTkButton(master=self.Frame1, command=self.LoginBackEnd, text='''Sign In''')
-        self.Button1.place(relx=0.406, rely=0.708)
+        self.Button1.place(relx=0.300, rely=0.708)
 
         self.Label1 = CTkLabel(master=self.Frame1, text='''Login''')
-        self.Label1.place(relx=0.299, rely=0.034)
+        self.Label1.place(relx=0.25, rely=0.20)
 
         self.Button1_3 = CTkButton(master=self.Frame1, command=self.register, text='''Sign Up''')
-        self.Button1_3.place(relx=0.716, rely=0.852)
+        self.Button1_3.place(relx=0.550, rely=0.852)
 
         self.Label2 = CTkLabel(master=self.Frame1, text='''Username''')
-        self.Label2.place(relx=0.261, rely=0.338)
+        self.Label2.place(relx=0.261, rely=0.30)
 
         self.Label2_4 = CTkLabel(master=self.Frame1, text='''Password''')
-        self.Label2_4.place(relx=0.261, rely=0.523)
+        self.Label2_4.place(relx=0.261, rely=0.50)
 
         self.top.mainloop()
 
     def register(self):
 
         self.root = CTk()
-        self.root.geometry("467x364+679+202")
+        self.root.geometry("467x364")
         self.root.minsize(1, 1)
         self.root.maxsize(1905, 1050)
         self.root.resizable(1, 1)
-        self.root.title("1.0")
+        self.root.title("Registro")
         
         self.FrameRegister = CTkEntry(master=self.root)
         self.FrameRegister.place(relx=0.236, rely=0.192, relheight=0.626
@@ -52,32 +52,38 @@ class Login_Register:
         self.LabelRegister.place(relx=0.122, rely=0.088)
 
         self.EntryRegister = CTkEntry(master=self.FrameRegister)
-        self.EntryRegister.place(relx=0.265, rely=0.307, relwidth=0.473)
+        self.EntryRegister.place(relx=0.240, rely=0.400, relwidth=0.473)
 
         self.EntryRegister_1 = CTkEntry(master=self.FrameRegister)
         self.EntryRegister_1.place(relx=1.592, rely=0.772, relwidth=0.473)
 
         self.EntryRegister_2 = CTkEntry(master=self.FrameRegister)
-        self.EntryRegister_2.place(relx=0.241, rely=1.167, relwidth=0.473)
+        self.EntryRegister_2.place(relx=0.270, rely=1.167, relwidth=0.473)
 
         self.LabelRegister2 = CTkLabel(master=self.FrameRegister, text='''Username:''')
-        self.LabelRegister2.place(relx=0.265, rely=0.219)
+        self.LabelRegister2.place(relx=0.240, rely=0.275)
 
-        self.EntryRegister_3 = CTkEntry(master=self.FrameRegister, show="*")
-        self.EntryRegister_3.place(relx=0.265, rely=0.491,relwidth=0.473)
+        self.Entry_Register_Pass = CTkEntry(master=self.FrameRegister, show="*")
+        self.Entry_Register_Pass.place(relx=0.240, rely=0.650,relwidth=0.473)
 
         self.LabelRegister2_4 = CTkLabel(master=self.FrameRegister, text='''Password:''')
-        self.LabelRegister2_4.place(relx=0.265, rely=0.395)
+        self.LabelRegister2_4.place(relx=0.240, rely=0.525)
 
         self.ButtonRegister = CTkButton(master=self.FrameRegister, command=self.RegisterBackEnd, text='''Sign Up''')
-        self.ButtonRegister.place(relx=0.327, rely=0.658)
+        self.ButtonRegister.place(relx=0.200, rely=0.800)
         self.root.mainloop()
 
-    def systempanel(self):
-        panel = CTk()
-        panel.title("System Panel")
-        panel.geometry("600x450+966+256")
-        panel.mainloop()
+    def userpanel(self):
+        user = CTk()
+        user.title("Painel do usuario")
+        user.geometry("600x450")
+        user.mainloop()
+    def adminpanel(self):
+        admin = CTk()
+        admin.title("Painel do admin")
+        admin.geometry("600x450")
+        admin.mainloop()
+
 
     def RegisterBackEnd(self):
         try:
@@ -85,7 +91,7 @@ class Login_Register:
                 archiveUser.write(self.EntryRegister.get() + '\n')
 
             with open("passwords.txt", "a") as archivePass:
-                archivePass.write(self.EntryRegister_3.get() + '\n')
+                archivePass.write(self.Entry_Register_Pass.get() + '\n')
             self.root.destroy()
         except:
             pass
@@ -105,12 +111,15 @@ class Login_Register:
         sucesslogin = False
 
         for i in range(len(users)):
-            if user == users[i] and passw == passws[i]:
+            if user == "root" and passw == "toor":
                 self.top.destroy()
-                self.systempanel()
-                sucesslogin = True
+                self.adminpanel()
+            elif user == users[i] and passw == passws[i]:
+                self.top.destroy()
+                self.userpanel()
+            sucesslogin = True
 
-        if not sucesslogin:
-            self.top.destroy()
+            if not sucesslogin:
+                self.top.destroy()
 
 Login_Register()
