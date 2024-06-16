@@ -1,11 +1,21 @@
 import sqlite3
-import uuid
 from customtkinter import *
 from tkinter import Listbox, END
+from utils import setup_database, show_popup, generate_user_id
+from reports import Reports
+from user_management import UserManagement
 
 class Login_Register:
     def __init__(self):
-        self.setup_database()
+        """
+        Inicializa a interface de login e registro, configurando a janela principal e os widgets.
+        """
+        try:
+            self.conn, self.cursor = setup_database()
+        except sqlite3.Error as e:
+            show_popup("Erro", f"Erro ao configurar o banco de dados: {e}")
+            return
+
         self.top = CTk()
         self.top.geometry("600x450")
         self.top.minsize(1, 1)
@@ -39,28 +49,10 @@ class Login_Register:
 
         self.top.mainloop()
 
-    def setup_database(self):
-        self.conn = sqlite3.connect('ingressos.db')
-        self.cursor = self.conn.cursor()
-        self.cursor.execute('''CREATE TABLE IF NOT EXISTS ingressos (
-                                id INTEGER PRIMARY KEY,
-                                time_casa TEXT,
-                                time_visitante TEXT,
-                                data TEXT,
-                                preco REAL)''')
-        self.cursor.execute('''CREATE TABLE IF NOT EXISTS users (
-                                id TEXT PRIMARY KEY,
-                                username TEXT,
-                                password TEXT)''')
-        self.cursor.execute('''CREATE TABLE IF NOT EXISTS compras (
-                                user_id TEXT,
-                                ingresso_id INTEGER,
-                                quantidade INTEGER,
-                                FOREIGN KEY (user_id) REFERENCES users(id),
-                                FOREIGN KEY (ingresso_id) REFERENCES ingressos(id))''')
-        self.conn.commit()
-
     def register(self):
+        """
+        Abre a janela de registro para criar uma nova conta de usuário.
+        """
         self.root = CTk()
         self.root.geometry("467x364")
         self.root.minsize(1, 1)
@@ -92,6 +84,9 @@ class Login_Register:
         self.root.mainloop()
 
     def userpanel(self):
+        """
+        Abre o painel do usuário, onde ele pode visualizar e comprar ingressos.
+        """
         self.user = CTk()
         self.user.title("Painel do usuario")
         self.user.geometry("600x450")
@@ -121,14 +116,23 @@ class Login_Register:
         self.user.mainloop()
 
     def load_ingressos(self):
-        self.cursor.execute("SELECT * FROM ingressos")
-        ingressos = self.cursor.fetchall()
-        self.ingressos = ingressos  # Armazena ingressos para uso posterior
+        """
+        Carrega os ingressos disponíveis do banco de dados e os exibe na listbox.
+        """
+        try:
+            self.cursor.execute("SELECT * FROM ingressos")
+            ingressos = self.cursor.fetchall()
+            self.ingressos = ingressos  # Armazena ingressos para uso posterior
 
-        for ingresso in ingressos:
-            self.listbox_ingressos.insert(END, f"ID: {ingresso[0]}, {ingresso[1]} vs {ingresso[2]}, Data: {ingresso[3]}, Preço: R${ingresso[4]:.2f}")
+            for ingresso in ingressos:
+                self.listbox_ingressos.insert(END, f"ID: {ingresso[0]}, {ingresso[1]} vs {ingresso[2]}, Data: {ingresso[3]}, Preço: R${ingresso[4]:.2f}")
+        except sqlite3.Error as e:
+            show_popup("Erro", f"Erro ao carregar ingressos: {e}")
 
     def buy_ticket(self):
+        """
+        Abre a janela de pagamento para comprar ingressos selecionados.
+        """
         selected_indices = self.listbox_ingressos.curselection()
         selected_ids = [self.ingressos[i][0] for i in selected_indices]
         selected_prices = [self.ingressos[i][4] for i in selected_indices]
@@ -168,6 +172,13 @@ class Login_Register:
             self.payment.mainloop()
 
     def confirm_payment(self, ingresso_ids, ingresso_prices):
+        """
+        Confirma o pagamento dos ingressos selecionados e registra a compra no banco de dados.
+
+        Args:
+            ingresso_ids (list): Lista de IDs dos ingressos selecionados.
+            ingresso_prices (list): Lista de preços dos ingressos selecionados.
+        """
         card_number = self.EntryCardNumber.get()
         card_name = self.EntryCardName.get()
         card_expiry = self.EntryCardExpiry.get()
@@ -175,41 +186,58 @@ class Login_Register:
         quantidade = self.EntryQuantity.get()
 
         if not card_number.isdigit() or len(card_number) != 16:
-            self.show_popup("Erro", "Número do cartão inválido. Deve conter 16 dígitos.")
+            show_popup("Erro", "Número do cartão inválido. Deve conter 16 dígitos.")
             return
         if not card_name.replace(" ", "").isalpha():
-            self.show_popup("Erro", "Nome no cartão inválido. Deve conter apenas letras.")
+            show_popup("Erro", "Nome no cartão inválido. Deve conter apenas letras.")
             return
         if not card_expiry.isdigit() or len(card_expiry) != 4:
-            self.show_popup("Erro", "Data de validade inválida. Deve estar no formato MMAA. Sem /")
+            show_popup("Erro", "Data de validade inválida. Deve estar no formato MMAA. Sem /")
             return
         if not card_cvv.isdigit() or len(card_cvv) != 3:
-            self.show_popup("Erro", "CVV inválido. Deve conter 3 dígitos.")
+            show_popup("Erro", "CVV inválido. Deve conter 3 dígitos.")
             return
         if not quantidade.isdigit() or int(quantidade) <= 0:
-            self.show_popup("Erro", "Quantidade inválida. Deve ser um número positivo.")
+            show_popup("Erro", "Quantidade inválida. Deve ser um número positivo.")
             return
 
         quantidade = int(quantidade)
         total_price = sum(ingresso_prices) * quantidade
 
-        # Simula a confirmação do pagamento
-        for ingresso_id in ingresso_ids:
-            self.cursor.execute("INSERT INTO compras (user_id, ingresso_id, quantidade) VALUES (?, ?, ?)", (self.current_user_id, ingresso_id, quantidade))
-        self.conn.commit()
-        self.payment.destroy()
-        self.load_user_tickets()
+        try:
+            for ingresso_id in ingresso_ids:
+                self.cursor.execute("INSERT INTO compras (user_id, ingresso_id, quantidade) VALUES (?, ?, ?)", (self.current_user_id, ingresso_id, quantidade))
+            self.conn.commit()
+            self.payment.destroy()
+            self.load_user_tickets()
 
-        self.show_popup("Sucesso", f"Compra realizada com sucesso!\nTotal: R${total_price:.2f}")
+            show_popup("Sucesso", f"Compra realizada com sucesso!\nTotal: R${total_price:.2f}")
+        except sqlite3.Error as e:
+            show_popup("Erro", f"Erro ao registrar a compra: {e}")
 
     def load_user_tickets(self):
-        self.cursor.execute("SELECT ingressos.time_casa, ingressos.time_visitante, ingressos.data, ingressos.preco, SUM(compras.quantidade) FROM ingressos JOIN compras ON ingressos.id = compras.ingresso_id WHERE compras.user_id = ? GROUP BY ingressos.id", (self.current_user_id,))
-        user_tickets = self.cursor.fetchall()
-        self.listbox_comprados.delete(0, END)
-        for ticket in user_tickets:
-            self.listbox_comprados.insert(END, f"{ticket[0]} vs {ticket[1]}, Data: {ticket[2]}, Preço: R${ticket[3]:.2f}, Quantidade: {ticket[4]}")
+        """
+        Carrega os ingressos comprados pelo usuário e os exibe na listbox.
+        """
+        try:
+            self.cursor.execute("""
+                SELECT ingressos.time_casa, ingressos.time_visitante, ingressos.data, ingressos.preco, SUM(compras.quantidade)
+                FROM ingressos
+                JOIN compras ON ingressos.id = compras.ingresso_id
+                WHERE compras.user_id = ?
+                GROUP BY ingressos.id
+            """, (self.current_user_id,))
+            user_tickets = self.cursor.fetchall()
+            self.listbox_comprados.delete(0, END)
+            for ticket in user_tickets:
+                self.listbox_comprados.insert(END, f"{ticket[0]} vs {ticket[1]}, Data: {ticket[2]}, Preço: R${ticket[3]:.2f}, Quantidade: {ticket[4]}")
+        except sqlite3.Error as e:
+            show_popup("Erro", f"Erro ao carregar ingressos comprados: {e}")
 
     def adminpanel(self):
+        """
+        Abre o painel do administrador, onde ele pode adicionar novos ingressos.
+        """
         self.admin = CTk()
         self.admin.title("Painel do admin")
         self.admin.geometry("600x450")
@@ -235,72 +263,89 @@ class Login_Register:
         self.ButtonAddIngresso = CTkButton(master=self.FrameAdmin, command=self.add_ingresso, text='Adicionar Ingresso')
         self.ButtonAddIngresso.place(relx=0.35, rely=0.55)
 
+        self.ButtonReports = CTkButton(master=self.FrameAdmin, command=self.open_reports, text='Relatórios e Estatísticas')
+        self.ButtonReports.place(relx=0.35, rely=0.65)
+
+        self.ButtonUserManagement = CTkButton(master=self.FrameAdmin, command=self.open_user_management, text='Gestão de Usuários')
+        self.ButtonUserManagement.place(relx=0.35, rely=0.75)
+
         self.admin.mainloop()
 
     def add_ingresso(self):
+        """
+        Adiciona um novo ingresso ao banco de dados.
+        """
         time_casa = self.EntryTimeCasa.get()
         time_visitante = self.EntryTimeVisitante.get()
         data = self.EntryData.get()
-        preco = self.EntryPreco.get()
-
-        if not preco.replace('.', '', 1).isdigit():
-            self.show_popup("Erro", "Preço inválido. Deve ser um número.")
+        try:
+            preco = float(self.EntryPreco.get())
+        except ValueError:
+            show_popup("Erro", "Preço inválido. Deve ser um número.")
             return
 
-        preco = float(preco)
+        try:
+            self.cursor.execute("INSERT INTO ingressos (time_casa, time_visitante, data, preco) VALUES (?, ?, ?, ?)", (time_casa, time_visitante, data, preco))
+            self.conn.commit()
 
-        self.cursor.execute("INSERT INTO ingressos (time_casa, time_visitante, data, preco) VALUES (?, ?, ?, ?)", (time_casa, time_visitante, data, preco))
-        self.conn.commit()
+            self.EntryTimeCasa.delete(0, END)
+            self.EntryTimeVisitante.delete(0, END)
+            self.EntryData.delete(0, END)
+            self.EntryPreco.delete(0, END)
+        except sqlite3.Error as e:
+            show_popup("Erro", f"Erro ao adicionar ingresso: {e}")
 
-        self.EntryTimeCasa.delete(0, END)
-        self.EntryTimeVisitante.delete(0, END)
-        self.EntryData.delete(0, END)
-        self.EntryPreco.delete(0, END)
-        self.load_ingressos()
+    def open_reports(self):
+        Reports(self.conn)
+
+    def open_user_management(self):
+        UserManagement(self.conn)
 
     def RegisterBackEnd(self):
+        """
+        Registra um novo usuário no banco de dados, garantindo que o nome de usuário seja único.
+        """
         try:
-            user_id = str(uuid.uuid4())
             username = self.EntryRegister.get()
             password = self.Entry_Register_Pass.get()
 
+            # Verifica se o nome de usuário já existe
+            self.cursor.execute("SELECT username FROM users WHERE username = ?", (username,))
+            if self.cursor.fetchone():
+                show_popup("Erro", "Nome de usuário já existe. Escolha outro nome.")
+                return
+
+            user_id = generate_user_id()
             self.cursor.execute("INSERT INTO users (id, username, password) VALUES (?, ?, ?)", (user_id, username, password))
             self.conn.commit()
             self.root.destroy()
-        except Exception as e:
-            self.show_popup("Erro", f"Erro ao registrar: {e}")
+        except sqlite3.Error as e:
+            show_popup("Erro", f"Erro ao registrar: {e}")
 
     def LoginBackEnd(self):
+        """
+        Realiza o login do usuário, verificando as credenciais no banco de dados.
+        """
         try:
+            self.cursor.execute("SELECT id, username, password FROM users")
+            users = self.cursor.fetchall()
+
             username = self.Entry1.get()
             password = self.Entry1_2.get()
 
-            self.cursor.execute("SELECT id FROM users WHERE username = ? AND password = ?", (username, password))
-            result = self.cursor.fetchone()
+            for user in users:
+                if username == "root" and password == "toor":
+                    self.top.destroy()
+                    self.adminpanel()
+                    return
+                elif username == user[1] and password == user[2]:
+                    self.current_user_id = user[0]
+                    self.top.destroy()
+                    self.userpanel()
+                    return
 
-            if username == "root" and password == "toor":
-                self.top.destroy()
-                self.adminpanel()
-            elif result:
-                self.current_user_id = result[0]
-                self.top.destroy()
-                self.userpanel()
-            else:
-                self.show_popup("Erro", "Login falhou. Usuário ou senha incorretos.")
-        except Exception as e:
-            self.show_popup("Erro", f"Erro ao fazer login: {e}")
-
-    def show_popup(self, title, message):
-        popup = CTk()
-        popup.title(title)
-        popup.geometry("300x200")
-
-        label = CTkLabel(master=popup, text=message)
-        label.place(relx=0.5, rely=0.4, anchor=CENTER)
-
-        button = CTkButton(master=popup, text="OK", command=popup.destroy)
-        button.place(relx=0.5, rely=0.7, anchor=CENTER)
-
-        popup.mainloop()
+            show_popup("Erro", "Login falhou. Usuário ou senha incorretos.")
+        except sqlite3.Error as e:
+            show_popup("Erro", f"Erro ao fazer login: {e}")
 
 Login_Register()
